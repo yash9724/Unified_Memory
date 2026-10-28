@@ -1,8 +1,9 @@
-# unified_mem
+# Unified Memory Address Mapping Optimizer
 
-Group 13, Memory Centric Computing project.
+This project is implementation of following paper:
 
-Implementation of the address mapping optimizer from the paper "Rethinking Unified Memory for NPU-PIM Systems: Dual-View Memory for Dynamic Inference of LLM" (PFM).
+S. Zhao, L. Liu, T. Han, M. Wang, Y. Han, and Y. Wang, "Rethinking Unified Memory for NPU-PIM Systems: Dual-View Memory for Dynamic Inference of LLM," arXiv:2608.06989 [cs.AR], Aug. 2026. https://arxiv.org/abs/2608.06989
+
 
 ## About
 
@@ -34,3 +35,7 @@ results/     outputs and plots
 ## Setup
 
 To be added.
+
+## Reference
+
+S. Zhao, L. Liu, T. Han, M. Wang, Y. Han, and Y. Wang, "Rethinking Unified Memory for NPU-PIM Systems: Dual-View Memory for Dynamic Inference of LLM," arXiv:2608.06989 [cs.AR], Aug. 2026. https://arxiv.org/abs/2608.06989
