@@ -1,0 +1,4 @@
+[submodule "ramulator2"]
+	path = ramulator2
+	url = https://github.com/yash9724/ramulator2
+	branch = pfm
