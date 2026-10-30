@@ -1,0 +1,69 @@
+# HBM2e memory config as described in the PFM paper (Table I).
+# 32 paper channels = 16 channels * 2 pseudo-channels
+# 16 banks per channel = 4 bank groups * 4 banks
+
+Frontend:
+  impl: LoadStoreTrace
+  path: traces/smoke.trace
+  clock_ratio: 8          # 8 (frontend) vs. 1 (memory): the frontend gets 8 ticks for every 1 memory clock.
+                          # Each tick can send one request. We need that rate: 32 pseudo-channels each take one request every 4 cycles, which is 8 requests per cycle.
+                          # A slower frontend would starve the memory, and we'd be measuring the frontend instead of the memory.
+
+MemorySystem:
+  impl: GenericDRAM
+  clock_ratio: 1
+
+  DRAM:
+    impl: HBM2
+    org:
+      channel_width: 128    # sets request size only: 2 * 128 / 8 = 32B
+      dq: 128
+      density: 8192         # Mb per channel
+      channel: 16
+      pseudochannel: 2
+      bankgroup: 4
+      bank: 4
+      row: 32768
+      column: 64            # 64 / 2 (prefetch) = 32 requests * 32B = 1KB row
+    timing:
+      rate: 3200            # MT/s, tCK = 0.625 ns 
+      nBL: 4                # 32B burst = 4 * 0.625 ns = 2.5 ns
+      # Paper Table I (ns)
+      tRCDRD: 14
+      tRCDWR: 14
+      tRP: 15
+      tRAS: 33
+      tRC: 48
+      tWR: 16
+      tCCDS: 1.25
+      tCCDL: 3.5
+      tRRDL: 6
+      tFAW: 30
+      tREFI: 3900
+      tRFC: 350
+      # Not in the paper, taken from Ramulator's HBM2_2Gbps preset
+      tCL: 7
+      tCWL: 2
+      tRTPS: 2
+      tRTPL: 3
+      tRRDS: 2
+      tWTRS: 3
+      tWTRL: 4
+      tRTW: 3
+      tRREFD: 8
+      # Per bank refresh, unused with AllBank refresh but required
+      tRFCSB: 160
+      tREFISB: 244
+
+  Controller:
+    impl: Generic
+    Scheduler:
+      impl: FRFCFS
+    RefreshManager:
+      impl: AllBank
+    RowPolicy:
+      impl: OpenRowPolicy
+    plugins:
+  
+  AddrMapper:
+    impl: RoBaRaCoCh        # will get replaced with per region mapper
