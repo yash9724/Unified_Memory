@@ -1,0 +1,52 @@
+Frontend: {impl: LoadStoreTrace, path: traces/smoke.trace, clock_ratio: 8}
+MemorySystem:
+  impl: GenericDRAM
+  clock_ratio: 1
+  DRAM:
+    impl: HBM2
+    org: {channel_width: 128, dq: 128, density: 8192, channel: 16, pseudochannel: 2,
+      bankgroup: 4, bank: 4, row: 32768, column: 64}
+    timing: {rate: 3200, nBL: 4, tRCDRD: 14, tRCDWR: 14, tRP: 15, tRAS: 33, tRC: 48,
+      tWR: 16, tCCDS: 1.25, tCCDL: 3.5, tRRDL: 6, tFAW: 30, tREFI: 3900, tRFC: 350,
+      tCL: 7, tCWL: 2, tRTPS: 2, tRTPL: 3, tRRDS: 2, tWTRS: 3, tWTRL: 4, tRTW: 3,
+      tRREFD: 8, tRFCSB: 160, tREFISB: 244}
+  Controller:
+    impl: Generic
+    Scheduler: {impl: FRFCFS}
+    RefreshManager: {impl: AllBank}
+    RowPolicy: {impl: OpenRowPolicy}
+    plugins: null
+  AddrMapper:
+    impl: RegionMapper
+    page_bytes: 2097152
+    regions:
+    - name: npu_friendly
+      base: 0
+      size: 1073741824
+      bits:
+        channel: [5, 6, 7, 8]
+        pseudochannel: [9]
+        bankgroup: [10, 11]
+        bank: [12, 13]
+        column: [14, 15, 16, 17, 18]
+        row: [19, 20]
+    - name: pim_friendly
+      base: 1073741824
+      size: 1073741824
+      bits:
+        column: [5, 6, 7, 8, 9]
+        channel: [10, 11, 12, 13]
+        pseudochannel: [14]
+        bankgroup: [15, 16]
+        bank: [17, 18]
+        row: [19, 20]
+    - name: joint
+      base: 2147483648
+      size: 1073741824
+      bits:
+        column: [14, 15, 16, 17, 18]
+        row: [19, 20]
+        bank: [12, 13]
+        bankgroup: [5, 11]
+        pseudochannel: [10]
+        channel: [6, 7, 8, 9]
