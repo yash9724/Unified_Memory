@@ -1,6 +1,7 @@
 """Generate a read trace that keeps every pseudo-channel busy.
 
-Address bits follow Ramulator's RoBaRaCoCh mapper for configs/hbm2e_pfm.yaml:
+Field sizes come from configs/hbm2e_pfm.yaml. Address bits follow Ramulator's
+RoBaRaCoCh mapper, and with the current config they are:
   offset [4:0], channel [8:5], column [13:9], pseudochannel [14],
   bankgroup [16:15], bank [18:17], row [33:19]
 
@@ -11,19 +12,40 @@ opened.
 """
 
 import argparse
+from pathlib import Path
 
-CHANNELS = 16
-PSEUDOCHANNELS = 2
-BANKGROUPS = 4
-COLUMNS = 32
-BANKS = 4
+from mapper.model import OFFSET_BITS, ORG, REQUESTS_PER_ROW, bits_for
+
+DEFAULT_OUTPUT = Path(__file__).resolve().parent / "peak.trace"
+
+FIELD_SIZES = {
+    "ch": ORG["channel"],
+    "pch": ORG["pseudochannel"],
+    "bg": ORG["bankgroup"],
+    "col": REQUESTS_PER_ROW,
+    "ba": ORG["bank"],
+    "row": ORG["row"],
+}
+
+# Which field changes fastest in the request order.
+COUNT_ORDER = ("ch", "pch", "bg", "col", "ba", "row")
+
+# Where RoBaRaCoCh places the fields in the address, low bits to high bits.
+ADDRESS_ORDER = ("ch", "col", "pch", "bg", "ba", "row")
+
+SHIFTS = {}
+next_bit = OFFSET_BITS
+for field in ADDRESS_ORDER:
+    SHIFTS[field] = next_bit
+    next_bit += bits_for(FIELD_SIZES[field])
 
 
 def address(i):
     """Return the address of request number i.
 
     The fields count like the digits of an odometer. Channel is the fastest
-    digit; each slower digit moves only when the one before it wraps:
+    digit; each slower digit moves only when the one before it wraps. With the
+    current config:
 
         channel        changes every request
         pseudochannel  changes every 16 requests
@@ -61,29 +83,25 @@ def address(i):
           127  0x1c1e0  15    1   3    0  everything at column 0 is done
           128  0x200     0    0   0    1  bankgroup wrapped, column moves
     """
-    # % reads the current digit, //= drops it so the next digit is in place.
-    ch = i % CHANNELS
-    i //= CHANNELS
-    pch = i % PSEUDOCHANNELS
-    i //= PSEUDOCHANNELS
-    bg = i % BANKGROUPS
-    i //= BANKGROUPS
-    col = i % COLUMNS
-    i //= COLUMNS
-    ba = i % BANKS
-    row = i // BANKS
+    
+    addr = 0
+    for field in COUNT_ORDER:
+        # % reads the current digit, //= drops it so the next digit is in place.
+        digit = i % FIELD_SIZES[field]
+        i //= FIELD_SIZES[field]
 
-    # Move each field to its bit position in the mapper's layout. This differs
-    # from the counting order above: column bits sit below pseudochannel and
-    # bankgroup, so the addresses do not increase steadily. For example, the
-    # address drops from 0x1c1e0 to 0x200 at request 128.
-    return (ch << 5) | (col << 9) | (pch << 14) | (bg << 15) | (ba << 17) | (row << 19)
+        # Move the digit to its bit position in the mapper's layout. This
+        # differs from the counting order: column bits sit below pseudochannel
+        # and bankgroup, so the addresses do not increase steadily. For example,
+        # the address drops from 0x1c1e0 to 0x200 at request 128.
+        addr |= digit << SHIFTS[field]
+    return addr
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("-n", "--num-requests", type=int, default=1_000_000)     # generate 1 million addresses
-    parser.add_argument("-o", "--output", default="traces/peak.trace")
+    parser.add_argument("-o", "--output", default=DEFAULT_OUTPUT)
     args = parser.parse_args()
 
     with open(args.output, "w") as f:

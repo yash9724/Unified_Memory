@@ -9,4 +9,5 @@ __pycache__/
 .vscode/
 
 traces/*.trace
+traces/*.output
 !traces/smoke.trace
